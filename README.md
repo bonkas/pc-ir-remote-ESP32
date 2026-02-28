@@ -1,87 +1,141 @@
 # PC IR Remote
 
 A custom PCB that lets you control your PC's power and reset buttons using any IR remote.
-Built around an ESP32-C3 Super Mini. Supports Home Assistant integration via ESPHome,
-or runs fully standalone with the included Arduino sketch — no smart home required.
+Built around an ESP32-C3 Super Mini. Works with Home Assistant via ESPHome, or fully
+standalone — no smart home required.
+
+---
+
+## How It Works
+
+The TSOP38238 IR receiver picks up signals from any standard TV remote. The ESP32-C3
+decodes the signal and briefly activates a relay, which shorts the two pins of the
+motherboard's power button header — exactly as if you pressed the physical button.
+A second relay does the same for the reset button.
+
+Because the board is powered from the motherboard's internal USB header (5V standby),
+it stays powered whenever the PC is plugged into mains — so it can receive a power-on
+command even when the PC is completely off.
+
+```
+IR Remote → TSOP38238 → ESP32-C3 → Relay → PWR_SW / RST_SW header on motherboard
+```
+
+---
 
 ## Features
 
 - Power on/off and reset your PC with any IR remote
-- IR codes stored in flash — survive power cycles
-- Two firmware options: ESPHome (Home Assistant) or standalone Arduino sketch
-- Physical learn/trigger buttons on the board (GPIO5, GPIO6)
+- Powered from the motherboard internal USB header — works when the PC is off
+- Two firmware options: Home Assistant (ESPHome) or fully standalone (Arduino sketch)
+- IR codes stored in flash and survive power cycles
+- Physical buttons on the board for direct manual triggering (no remote needed)
 - Status LED feedback for all actions
-- Powered from the motherboard's internal USB header (standby 5V — works when PC is off)
-- Relay-based switching (phase 1) with MOSFET upgrade path (phase 2)
 
-## Hardware
+---
 
-| Component | Part |
-|-----------|------|
-| MCU | ESP32-C3 Super Mini |
-| IR Receiver | TSOP38238 (38kHz) |
-| Relay driver | PC817 optocoupler + S8550 PNP transistor (per relay) |
-| Relays | JY3FF-S-DC5V-C SPDT × 2 (K1 = power, K2 = reset) |
-| Flyback diodes | 1N914 SOD-323F (per relay) |
-
-### Pin Assignments
-
-| Function | GPIO |
-|----------|------|
-| IR Receiver OUT | GPIO3 |
-| Power relay (→ PWR_SW header) | GPIO1 |
-| Reset relay (→ RST_SW header) | GPIO2 |
-| Power button / Learn Power | GPIO5 |
-| Reset button / Learn Reset | GPIO6 |
-| Status LED | GPIO7 (external) or GPIO8 (onboard) |
-
-See `docs/assembly.md` for full wiring details.
-
-## Repository Layout
-
-```
-firmware/
-  esphome/          — ESPHome YAML (Home Assistant integration)
-  arduino/          — Standalone Arduino/PlatformIO sketch (no HA required)
-hardware/
-  kicad/            — KiCad schematic and PCB files
-  gerbers/          — Fabrication files
-  bom/              — Bill of materials
-docs/
-  assembly.md       — Wiring guide and breadboard prototype instructions
-CONTEXT.md          — Full project background and design decisions
-```
-
-## Status
+## Project Status
 
 Breadboard prototype validated. PCB schematic complete, layout in progress.
+Gerbers and BOM will be added once the PCB layout is finalised.
+
+---
+
+## What You Need to Build One
+
+### Components
+
+| Component | Part | Qty |
+|-----------|------|-----|
+| MCU | ESP32-C3 Super Mini | 1 |
+| IR Receiver | TSOP38238 (38kHz) | 1 |
+| Optocoupler | PC817 (DIP-4) | 2 |
+| Relay driver transistor | S8550 PNP (SOT-23) | 2 |
+| Relay | JY3FF-S-DC5V-C SPDT | 2 |
+| Flyback diode | 1N914 (SOD-323F) | 2 |
+| Decoupling capacitor | 100nF ceramic (0805) | 1 |
+| TSOP series resistor | 100Ω (0805) | 1 |
+| Status LED | LED (0805) | 1 |
+| LED resistor | 330Ω (0805) | 1 |
+
+See `hardware/bom/` for the full BOM with values and supplier links.
+
+### PCB
+
+Gerbers for fabrication are in `hardware/gerbers/`. Upload the zip to your preferred
+PCB manufacturer (JLCPCB, PCBWay, OSHPark, etc.) with default 2-layer settings.
+
+### Tools and Software
+
+- Soldering iron (SMD-capable)
+- VS Code + PlatformIO extension (Arduino sketch), or Home Assistant + ESPHome add-on
+- USB-C cable for flashing
+
+---
+
+## Connecting to Your PC
+
+1. Locate the **PWR_SW** and **RST_SW** headers on your motherboard (usually labelled
+   on the PCB near the front panel connector block — check your motherboard manual).
+2. Connect the relay contacts to the appropriate header:
+   - K1 relay COM + NO → PWR_SW header (2 pins, polarity does not matter)
+   - K2 relay COM + NO → RST_SW header (2 pins, polarity does not matter)
+3. For power, tap 5V and GND from the motherboard's internal USB 2.0 header
+   (the 9-pin 2×5 header, 2.54mm pitch). Use any port's 5V and GND pins.
+
+See `docs/assembly.md` for the full wiring guide including the TSOP38238 and buttons.
+
+---
+
+## Pin Assignments (ESP32-C3 Super Mini)
+
+| Function | GPIO | Notes |
+|----------|------|-------|
+| IR Receiver OUT | GPIO3 | Input |
+| Power relay | GPIO1 | Output — relay contacts → PWR_SW header |
+| Reset relay | GPIO2 | Output — relay contacts → RST_SW header |
+| Learn Power / Power trigger | GPIO5 | Input, active-low, internal pull-up |
+| Learn Reset / Reset trigger | GPIO6 | Input, active-low, internal pull-up |
+| Status LED | GPIO7 | Output — external LED via 330Ω, or change to GPIO8 for onboard LED |
+
+---
+
+## Choosing a Firmware
+
+| | ESPHome | Arduino Sketch |
+|---|---|---|
+| **Best for** | Home Assistant users | Anyone — no smart home needed |
+| **IR code setup** | Edit YAML, reflash | Press button on board, point remote |
+| **Changing codes later** | Edit YAML, reflash | Press button on board again |
+| **HA integration** | Full — appears as devices in HA | None |
+| **Internet/WiFi required** | Yes | No |
+| **Standalone after setup** | Yes | Yes |
 
 ---
 
 ## Firmware Option 1 — ESPHome (Home Assistant)
 
-Best if you run Home Assistant. IR codes are configured in YAML. The device appears
-in HA as two buttons (PC Power, PC Reset) and two physical input sensors.
-
-### Flashing (ESPHome)
+### Setup
 
 1. Install the [ESPHome add-on](https://esphome.io/guides/getting_started_hassio) in Home Assistant.
-2. Copy `firmware/esphome/secrets.yaml.example` to `firmware/esphome/secrets.yaml` and fill in your WiFi credentials and keys. This file is gitignored and will never be committed.
+2. Copy `firmware/esphome/secrets.yaml.example` to `firmware/esphome/secrets.yaml`
+   and fill in your WiFi credentials and API key.
+   This file is gitignored and will never be committed.
 3. Add `firmware/esphome/pc-ir-remote.yaml` to your ESPHome dashboard.
-4. Connect the ESP32-C3 via USB and click **Install → Plug into this computer**.
+4. Connect the ESP32-C3 via USB-C and click **Install → Plug into this computer**.
 
-### Learning IR Codes (ESPHome)
+### Learning IR Codes
 
-IR codes are learned once and written into the YAML config.
+IR codes are identified from logs, then written into the YAML — a one-time process.
 
 1. Flash the device — `dump: all` is enabled by default.
-2. Open the ESPHome logs (dashboard → your device → Logs).
+2. Open the ESPHome logs (dashboard → your device → **Logs**).
 3. Point your remote at the TSOP38238 and press each button you want to use.
-4. The log shows the protocol and code for each press, e.g.:
+4. The log shows the protocol and code, e.g.:
    ```
    [D][remote.nec] Received NEC: address=0x04, command=0x08
    ```
-5. Edit `pc-ir-remote.yaml` — find the commented `on_nec` blocks and fill them in:
+5. Edit `pc-ir-remote.yaml` — uncomment and fill in the `on_nec` blocks:
    ```yaml
    on_nec:
      address: 0x04
@@ -89,60 +143,79 @@ IR codes are learned once and written into the YAML config.
      then:
        - button.press: pc_power_button
    ```
-6. Add a second block for the reset button if needed.
-7. Comment out `dump: all`, then reflash.
+6. Comment out `dump: all`, then reflash.
 
-> If your remote uses a different protocol (Samsung, RC5, etc.) the log will show
-> the correct protocol name — replace `on_nec` with `on_samsung`, `on_rc5`, etc.
+> If your remote uses a different protocol (Samsung, RC5, Sony, etc.) the log will
+> show the correct protocol name — replace `on_nec` with `on_samsung`, `on_rc5`, etc.
+
+For the full ESPHome setup walkthrough see `docs/setup.md`.
 
 ---
 
 ## Firmware Option 2 — Standalone Arduino Sketch
 
-Best if you don't use Home Assistant. IR codes are learned at runtime by pressing
-the onboard buttons — no computer or reflash needed after initial setup.
+### Setup
 
-### Flashing (PlatformIO)
-
-1. Install [VS Code](https://code.visualstudio.com/) and the [PlatformIO extension](https://platformio.org/install/ide?install=vscode).
+1. Install [VS Code](https://code.visualstudio.com/) and the
+   [PlatformIO extension](https://platformio.org/install/ide?install=vscode).
 2. Open the folder `firmware/arduino/pc-ir-remote/` in VS Code.
-3. PlatformIO will auto-install the required libraries (`IRremoteESP8266`, `Preferences`).
-4. Connect the ESP32-C3 via USB.
-5. Click **Upload** (→ arrow in the PlatformIO toolbar) or run `pio run --target upload`.
-6. Open the Serial Monitor at 115200 baud to confirm startup.
+3. PlatformIO auto-installs the required libraries on first open.
+4. Connect the ESP32-C3 via USB-C.
+5. Click the **→ Upload** arrow in the PlatformIO toolbar (bottom of VS Code).
+6. Open the **Serial Monitor** (plug icon, 115200 baud) to confirm startup.
 
-### Learning IR Codes (Arduino sketch)
+If upload fails with "Failed to connect": hold **BOOT**, tap **RESET**, release **BOOT**,
+then try again.
 
-IR codes are learned at runtime using the onboard buttons. Codes are saved to flash
-and survive power cycles — you only need to do this once per remote button.
+### Learning IR Codes
 
-**To learn the power button code:**
-1. Press the **Learn Power** button (GPIO5) on the board.
-2. The status LED flashes **3 times repeatedly** — the board is waiting.
-3. Point your remote at the TSOP38238 and press the button you want to use for power.
-4. The LED flashes **3 quick blinks** — code saved.
+Codes are learned at runtime — no reflash or computer needed after initial setup.
 
-**To learn the reset button code:**
-1. Press the **Learn Reset** button (GPIO6) on the board.
-2. The status LED flashes **2 times repeatedly** — the board is waiting.
+**Power button:**
+1. Press the **Learn Power** button (GPIO5).
+2. LED flashes **3 times repeatedly** — board is waiting for IR.
+3. Point your remote and press the button you want to use for power.
+4. LED flashes **3 quick blinks** — saved to flash.
+
+**Reset button:**
+1. Press the **Learn Reset** button (GPIO6).
+2. LED flashes **2 times repeatedly** — board is waiting for IR.
 3. Press the desired button on your remote.
-4. The LED flashes **3 quick blinks** — code saved.
+4. LED flashes **3 quick blinks** — saved to flash.
 
-**LED feedback reference:**
+Repeat at any time to change to a different remote or button.
+
+### LED Feedback
 
 | Pattern | Meaning |
 |---------|---------|
-| 3 repeating flashes | Learn power mode active — waiting for IR |
-| 2 repeating flashes | Learn reset mode active — waiting for IR |
+| 3 repeating flashes | Learn power mode — waiting for IR |
+| 2 repeating flashes | Learn reset mode — waiting for IR |
 | 3 quick blinks | Code saved successfully |
-| 2 slow blinks | Learn mode timed out (10s, no IR received) |
-| 1 blink | IR command received and relay fired |
+| 2 slow blinks | Timed out — no IR received within 10s |
+| 1 blink | IR command received, relay fired |
 
-**Debug mode:** Set `DUMP_ALL_CODES true` in the sketch to print every received IR
-code to Serial. Useful for finding codes if the learn buttons are not yet wired.
+For the full Arduino setup walkthrough see `docs/setup.md`.
+
+---
+
+## Repository Layout
+
+```
+firmware/
+  esphome/            — ESPHome YAML config + secrets template
+  arduino/            — Standalone PlatformIO sketch
+hardware/
+  gerbers/            — PCB fabrication files
+  bom/                — Bill of materials
+docs/
+  assembly.md         — Full wiring guide
+  setup.md            — Flashing and IR code setup for both firmware options
+CONTEXT.md            — Project background, design decisions, phase plan
+```
 
 ---
 
 ## License
 
-TBD (likely MIT for firmware, CERN-OHL-P for hardware)
+TBD — likely MIT for firmware, CERN-OHL-P for hardware.
