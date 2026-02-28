@@ -1,0 +1,12 @@
+Reference,Value,Footprint,Quantity,Notes
+U1,ESP32 Dev Board 38-pin,ESP32-DevKitC-38pin,1,Main MCU
+U2,TSOP38238,TSOP38238,1,IR receiver 38kHz — add 100nF cap + 100Ω series resistor on power
+K1,Relay 5V,SRD-05VDC-SL-C or similar,1,Phase 1 only — replace with MOSFET in phase 2
+Q1,AO3400 or BS170,SOT-23 or TO-92,1,Phase 2 MOSFET — DNP in phase 1
+R1,100Ω,0402 or 0603,1,Series resistor on TSOP38238 power line
+R2,100Ω,0402 or 0603,1,MOSFET gate resistor (phase 2)
+C1,100nF ceramic,0402 or 0603,1,Decoupling cap close to TSOP38238 VS pin
+J1,USB-A or USB-C,USB-A-TH or USB-C-TH,1,External power option — populate as needed
+J2,2x5 2.54mm header,IDC-2x5-2.54mm,1,Internal USB 2.0 motherboard header power tap
+J3,2x3.5mm screw terminal,ScrewTerminal-3.5mm-2pin,1,Generic 5V input option
+J4,2-pin 2.54mm header,PinHeader-1x2-2.54mm,1,PWR_SW connection to motherboard

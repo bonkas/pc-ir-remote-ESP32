@@ -1,0 +1,11 @@
+# ESPHome secrets — never commit these
+firmware/esphome/secrets.yaml
+.esphome/
+
+# KiCad source files — not published, only gerbers and BOM are committed
+hardware/kicad/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini

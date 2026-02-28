@@ -1,0 +1,185 @@
+# ESPHome config for PC IR Remote — ESP32-C3 Super Mini
+# See CONTEXT.md for full project background and wiring notes.
+#
+# SETUP STEPS:
+# 1. Flash this config to your ESP32-C3
+# 2. Open ESPHome logs and point your remote at the TSOP38238
+# 3. Press each button you want to use — codes appear in the log (dump: all)
+# 4. Note the protocol, address, and command for each button
+# 5. Fill in the on_nec (or other protocol) blocks below
+# 6. Reflash, then comment out or remove 'dump: all'
+
+# =============================================================================
+# DEVICE
+# =============================================================================
+
+esphome:
+  name: pc-ir-remote
+  friendly_name: PC IR Remote
+
+esp32:
+  board: lolin_c3_mini
+  variant: ESP32C3
+  framework:
+    type: arduino
+
+# =============================================================================
+# CONNECTIVITY
+# =============================================================================
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "PC-IR-Remote Fallback"
+    password: "changeme123"
+
+captive_portal:
+
+api:
+  encryption:
+    key: !secret api_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+logger:
+  level: DEBUG
+
+# =============================================================================
+# IR RECEIVER — TSOP38238
+# Wiring: OUT → GPIO3 (inverted: true, TSOP output is active-low)
+#         VS  → 3.3V via 100Ω series resistor
+#         GND → GND
+#         100nF ceramic cap between VS and GND, as close to the IC as possible.
+#
+# IR automations go inside this block using on_<protocol> triggers.
+# Replace on_nec with the correct protocol from your dump: all logs.
+# Add one block per remote button you want to use.
+# =============================================================================
+
+remote_receiver:
+  pin:
+    number: GPIO3
+    inverted: true
+  dump: all  # comment out after learning your remote codes
+
+  # --- IR automations (fill in address/command from logs, then uncomment) ---
+  # on_nec:
+  #   address: 0x????
+  #   command: 0x????
+  #   then:
+  #     - button.press: pc_power_button
+
+  # on_nec:
+  #   address: 0x????
+  #   command: 0x????
+  #   then:
+  #     - button.press: pc_reset_button
+
+# =============================================================================
+# RELAY OUTPUTS
+# Both relays are active-low (relay fires on LOW).
+# restore_mode: ALWAYS_OFF ensures relays never turn on during a reboot.
+# NOTE: GPIO2 is a strapping pin on ESP32-C3. If boot issues occur,
+#       add a 10kΩ pull-up resistor between GPIO2 and 3.3V.
+# =============================================================================
+
+switch:
+  - platform: gpio
+    pin:
+      number: GPIO1
+      inverted: true       # relay fires on LOW
+    id: power_relay
+    name: "PC Power Relay"
+    icon: "mdi:electric-switch"
+    restore_mode: ALWAYS_OFF
+
+  - platform: gpio
+    pin:
+      number: GPIO2
+      inverted: true       # relay fires on LOW
+    id: reset_relay
+    name: "PC Reset Relay"
+    icon: "mdi:electric-switch"
+    restore_mode: ALWAYS_OFF
+
+# =============================================================================
+# PULSE BUTTONS
+# Template buttons that fire the relay for 500ms — simulates a real button
+# press. Use these from HA, IR automations, and physical button triggers.
+# The status LED flashes once during the pulse.
+# =============================================================================
+
+button:
+  - platform: template
+    name: "PC Power Button"
+    id: pc_power_button
+    icon: "mdi:power"
+    on_press:
+      - light.turn_on: status_led
+      - switch.turn_on: power_relay
+      - delay: 500ms
+      - switch.turn_off: power_relay
+      - light.turn_off: status_led
+
+  - platform: template
+    name: "PC Reset Button"
+    id: pc_reset_button
+    icon: "mdi:restart"
+    on_press:
+      - light.turn_on: status_led
+      - switch.turn_on: reset_relay
+      - delay: 500ms
+      - switch.turn_off: reset_relay
+      - light.turn_off: status_led
+
+# =============================================================================
+# PHYSICAL BUTTONS
+# GPIO5 and GPIO6 are the onboard learn buttons (active-low, internal pull-up).
+# In the Arduino sketch these enter IR learn mode. In ESPHome, IR codes are
+# configured in YAML, so these buttons instead act as direct manual triggers —
+# press to fire the relay without needing the remote.
+# =============================================================================
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO5
+      mode: INPUT_PULLUP
+      inverted: true       # active-low
+    name: "Power Button (Physical)"
+    filters:
+      - delayed_on: 20ms   # debounce
+    on_press:
+      - button.press: pc_power_button
+
+  - platform: gpio
+    pin:
+      number: GPIO6
+      mode: INPUT_PULLUP
+      inverted: true       # active-low
+    name: "Reset Button (Physical)"
+    filters:
+      - delayed_on: 20ms   # debounce
+    on_press:
+      - button.press: pc_reset_button
+
+# =============================================================================
+# STATUS LED
+# GPIO7 → 330Ω → LED → GND  (external LED)
+# Change GPIO7 to GPIO8 to use the onboard LED_BUILTIN instead.
+# The light entity is controlled from button automations above.
+# =============================================================================
+
+output:
+  - platform: gpio
+    pin: GPIO7
+    id: status_led_output
+
+light:
+  - platform: binary
+    name: "Status LED"
+    id: status_led
+    output: status_led_output
