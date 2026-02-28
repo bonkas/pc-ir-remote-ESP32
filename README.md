@@ -13,9 +13,11 @@ decodes the signal and briefly activates a relay, which shorts the two pins of t
 motherboard's power button header — exactly as if you pressed the physical button.
 A second relay does the same for the reset button.
 
-Because the board is powered from the motherboard's internal USB header (5V standby),
-it stays powered whenever the PC is plugged into mains — so it can receive a power-on
-command even when the PC is completely off.
+The board can be powered in two ways. For internal installation, it taps 5V standby
+from the motherboard's internal USB 2.0 header — this keeps the board powered whenever
+the PC is plugged into mains, so it can receive a power-on command even when the PC is
+off. For external or bench use, it can be powered directly via the USB-C port on the
+ESP32-C3 Super Mini.
 
 ```
 IR Remote → TSOP38238 → ESP32-C3 → Relay → PWR_SW / RST_SW header on motherboard
@@ -26,11 +28,22 @@ IR Remote → TSOP38238 → ESP32-C3 → Relay → PWR_SW / RST_SW header on mot
 ## Features
 
 - Power on/off and reset your PC with any IR remote
-- Powered from the motherboard internal USB header — works when the PC is off
+- Powered from the motherboard internal USB header (standby 5V) — works when the PC is off
+- Alternatively powered via USB-C on the ESP32-C3 for external or bench use
 - Two firmware options: Home Assistant (ESPHome) or fully standalone (Arduino sketch)
 - IR codes stored in flash and survive power cycles
 - Physical buttons on the board for direct manual triggering (no remote needed)
 - Status LED feedback for all actions
+
+---
+
+## Documentation
+
+| File | What it covers | Read when |
+|------|---------------|-----------|
+| `docs/assembly.md` | Full wiring guide — TSOP38238, relays, buttons, LED, power supply, breadboard prototype | Building or wiring the hardware |
+| `docs/setup.md` | Step-by-step flashing and IR code setup for both firmware options | Setting up the firmware |
+| `CONTEXT.md` | Full project background, design decisions, phase plan, component choices | Understanding why things are done the way they are |
 
 ---
 
