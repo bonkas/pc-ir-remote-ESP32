@@ -148,15 +148,20 @@ IR codes are identified from logs, then written into the YAML — a one-time pro
    ```
    [D][remote.nec] Received NEC: address=0x04, command=0x08
    ```
-5. Edit `pc-ir-remote.yaml` — uncomment and fill in the `on_nec` blocks:
+5. Edit `pc-ir-remote.yaml` — find the commented `binary_sensor` IR button blocks and
+   uncomment them, filling in your address and command:
    ```yaml
-   on_nec:
-     address: 0x04
-     command: 0x08
-     then:
-       - button.press: pc_power_button
+   binary_sensor:
+     - platform: remote_receiver
+       name: "IR Power Button"
+       internal: true
+       nec:
+         address: 0x04
+         command: 0x08
+       on_press:
+         - button.press: pc_power_button
    ```
-6. Comment out `dump: all`, then reflash.
+6. Comment out `dump: all` in the `remote_receiver` block, then reflash.
 
 > If your remote uses a different protocol (Samsung, RC5, Sony, etc.) the log will
 > show the correct protocol name — replace `on_nec` with `on_samsung`, `on_rc5`, etc.
