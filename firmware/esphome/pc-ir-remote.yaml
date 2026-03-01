@@ -6,8 +6,8 @@
 # 2. Open ESPHome logs and point your remote at the TSOP38238
 # 3. Press each button you want to use — codes appear in the log (dump: all)
 # 4. Note the protocol, address, and command for each button
-# 5. Fill in the on_nec (or other protocol) blocks below
-# 6. Reflash, then comment out or remove 'dump: all'
+# 5. Add a binary_sensor entry for each IR button (see IR BUTTONS section below)
+# 6. Comment out or remove 'dump: all' once codes are captured, then reflash
 
 # =============================================================================
 # DEVICE
@@ -54,29 +54,14 @@ logger:
 #         GND → GND
 #         100nF ceramic cap between VS and GND, as close to the IC as possible.
 #
-# IR automations go inside this block using on_<protocol> triggers.
-# Replace on_nec with the correct protocol from your dump: all logs.
-# Add one block per remote button you want to use.
+# IR code matching is handled via binary_sensor entries below (see IR BUTTONS).
 # =============================================================================
 
 remote_receiver:
-  pin:
-    number: GPIO3
-    inverted: true
-  dump: all  # comment out after learning your remote codes
-
-  # --- IR automations (fill in address/command from logs, then uncomment) ---
-  # on_nec:
-  #   address: 0x????
-  #   command: 0x????
-  #   then:
-  #     - button.press: pc_power_button
-
-  # on_nec:
-  #   address: 0x????
-  #   command: 0x????
-  #   then:
-  #     - button.press: pc_reset_button
+  - pin:
+      number: GPIO3
+      inverted: true
+    dump: all  # comment out after learning your remote codes
 
 # =============================================================================
 # RELAY OUTPUTS
@@ -136,20 +121,48 @@ button:
       - light.turn_off: status_led
 
 # =============================================================================
-# PHYSICAL BUTTONS
-# GPIO5 and GPIO6 are the onboard learn buttons (active-low, internal pull-up).
-# In the Arduino sketch these enter IR learn mode. In ESPHome, IR codes are
-# configured in YAML, so these buttons instead act as direct manual triggers —
-# press to fire the relay without needing the remote.
+# BINARY SENSORS
+# Includes both physical buttons and IR remote buttons.
+#
+# IR BUTTONS — add one entry per remote button using the protocol and codes
+# from the 'dump: all' logs. Replace 'nec' with your protocol if different
+# (samsung, rc5, sony, etc.) and fill in address/command values.
+#
+# PHYSICAL BUTTONS — GPIO5 and GPIO6 act as direct manual relay triggers.
+# In the Arduino sketch these enter IR learn mode; in ESPHome IR codes are
+# configured here in YAML so the buttons trigger the relay directly instead.
 # =============================================================================
 
 binary_sensor:
+  # --- IR remote buttons (add one block per button) ---
+  # internal: true hides the entity from HA — it still triggers the relay.
+  # - platform: remote_receiver
+  #   name: "IR Power Button"
+  #   internal: true
+  #   nec:
+  #     address: 0x????
+  #     command: 0x????
+  #   on_press:
+  #     - button.press: pc_power_button
+
+  # - platform: remote_receiver
+  #   name: "IR Reset Button"
+  #   internal: true
+  #   nec:
+  #     address: 0x????
+  #     command: 0x????
+  #   on_press:
+  #     - button.press: pc_reset_button
+
+  # --- Physical buttons ---
+  # internal: true hides these from HA — they still trigger the relay when pressed.
   - platform: gpio
     pin:
       number: GPIO5
       mode: INPUT_PULLUP
       inverted: true       # active-low
     name: "Power Button (Physical)"
+    internal: true
     filters:
       - delayed_on: 20ms   # debounce
     on_press:
@@ -161,6 +174,7 @@ binary_sensor:
       mode: INPUT_PULLUP
       inverted: true       # active-low
     name: "Reset Button (Physical)"
+    internal: true
     filters:
       - delayed_on: 20ms   # debounce
     on_press:
