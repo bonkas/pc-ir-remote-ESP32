@@ -123,50 +123,36 @@ this to USB HID control and Home Assistant integration.
 
 ---
 
-## Firmware Skeleton (ESPHome)
+## ESPHome Config Overview
 
-```yaml
-# firmware/esphome/pc-ir-remote.yaml
-esphome:
-  name: pc-ir-remote
-  friendly_name: PC IR Remote
+The ESPHome YAML (`firmware/esphome/pc-ir-remote.yaml`) is structured as follows:
 
-esp32:
-  board: esp32dev
-  framework:
-    type: arduino
-
-wifi:
-  ssid: !secret wifi_ssid
-  password: !secret wifi_password
-
-api:
-  encryption:
-    key: !secret api_key
-
-ota:
-  password: !secret ota_password
-
-logger:
-
-remote_receiver:
-  pin:
-    number: GPIO14
-    inverted: true
-  dump: all  # Logs all received IR codes — use during setup to learn remote codes
-
-switch:
-  - platform: gpio
-    pin: GPIO12
-    id: power_relay
-    name: "PC Power Button"
-    icon: "mdi:power"
-    # For momentary press, use a button entity or automation with on_turn_on + delay
-
-# TODO: Add remote_receiver automations once IR codes are learned from your specific remote
-# Example structure:
-# on_raw:  or use specific protocol matchers (NEC, RC5, etc.)
-```
+- **Board**: `lolin_c3_mini` / `ESP32C3` / `arduino` framework
+- **IR receiver**: `remote_receiver` using list format (ESPHome 2026.x requirement):
+  ```yaml
+  remote_receiver:
+    - pin:
+        number: GPIO3
+        inverted: true
+      dump: all   # comment out after learning codes
+  ```
+- **IR matching**: via `binary_sensor` with `platform: remote_receiver`. `internal: true`
+  hides these from the HA UI — they still trigger automations.
+  ```yaml
+  binary_sensor:
+    - platform: remote_receiver
+      name: "IR Power Button"
+      internal: true
+      nec:
+        address: 0x????
+        command: 0x????
+      on_press:
+        - button.press: pc_power_button
+  ```
+- **Relay switches**: GPIO1 (power) and GPIO2 (reset), active-low, `restore_mode: ALWAYS_OFF`
+- **Template buttons**: `pc_power_button` and `pc_reset_button` — 500ms relay pulse + LED flash
+- **Physical buttons**: GPIO5 (power) and GPIO6 (reset), `internal: true`
+- **Status LED**: GPIO7 external (330Ω series) or GPIO8 onboard — controlled via `output` + `binary light`
 
 ---
 
@@ -175,16 +161,15 @@ switch:
 ```
 pc-ir-remote/
 ├── hardware/
-│   ├── kicad/          # KiCad project files (.kicad_pro, .kicad_sch, .kicad_pcb)
 │   ├── gerbers/        # Exported fab files for PCB manufacturing
 │   └── bom/            # Bill of materials (CSV + interactive HTML BOM)
+│   (kicad/ is gitignored — source files not published)
 ├── firmware/
-│   ├── esphome/        # ESPHome YAML configs (primary — HA integration)
-│   └── arduino/        # Standalone Arduino C++ sketch (no HA required)
+│   ├── esphome/        # ESPHome YAML config + secrets template
+│   └── arduino/        # Standalone PlatformIO/Arduino sketch
 ├── docs/
-│   ├── schematic.pdf   # Exported schematic for quick reference
-│   ├── assembly.md     # Assembly instructions
-│   └── setup.md        # Software/ESPHome setup guide
+│   ├── assembly.md     # Full wiring guide
+│   └── setup.md        # Flashing and IR code setup for both firmware options
 ├── CONTEXT.md          # This file — AI assistant briefing
 └── README.md           # Public-facing project description
 ```
@@ -207,17 +192,16 @@ pc-ir-remote/
 ## Publishing Intent
 
 - GitHub public repo for community use
-- Will include KiCad source, gerbers, BOM, ESPHome YAML, and Arduino sketch
-- Goal: someone should be able to clone the repo and have everything they need
-- License: TBD (likely MIT or CERN-OHL-P for hardware)
+- Includes gerbers, BOM, ESPHome YAML, and Arduino sketch
+- KiCad source files are gitignored and not published (gerbers are sufficient for fabrication)
+- Goal: someone should be able to clone the repo and have everything they need to build and flash
+- License: TBD (likely MIT for firmware, CERN-OHL-P for hardware)
 
 ---
 
 ## Open Questions / TODO
 
-- [ ] Choose specific ESP32 board footprint for KiCad (38-pin dev board vs bare module)
-- [ ] Decide relay vs MOSFET for first PCB rev (relay recommended to match breadboard phase)
-- [ ] Learn IR codes from target remote (run ESPHome with `dump: all`)
-- [ ] Decide on USB connector type for external power option (USB-A, micro-USB, or USB-C)
-- [ ] Choose PCB manufacturer and check design rules
-- [ ] Decide on solder jumper vs DNP (Do Not Populate) strategy for relay/MOSFET swap
+- [ ] Finalise PCB layout in KiCad and export gerbers
+- [ ] Choose PCB manufacturer and check design rules (JLCPCB / PCBWay / OSHPark)
+- [ ] Phase 2: Replace relay with MOSFET (minor PCB rev, minimal code change)
+- [ ] Phase 2: USB HID via motherboard header D+/D-

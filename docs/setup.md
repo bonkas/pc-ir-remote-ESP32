@@ -63,6 +63,7 @@ in the `binary_sensor:` section. Uncomment and fill in your address and command:
 binary_sensor:
   - platform: remote_receiver
     name: "IR Power Button"
+    internal: true
     nec:
       address: 0x837C
       command: 0x7F80
@@ -71,6 +72,7 @@ binary_sensor:
 
   - platform: remote_receiver
     name: "IR Reset Button"
+    internal: true
     nec:
       address: 0x837C
       command: 0x????
@@ -87,10 +89,10 @@ Once codes are captured, comment out `dump: all` in the YAML:
 
 ```yaml
 remote_receiver:
-  pin:
-    number: GPIO3
-    inverted: true
-  # dump: all
+  - pin:
+      number: GPIO3
+      inverted: true
+    # dump: all
 ```
 
 Then reflash — OTA from this point:
