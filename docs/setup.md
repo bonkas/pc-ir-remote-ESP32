@@ -54,29 +54,32 @@ esphome run firmware/esphome/pc-ir-remote.yaml
    ```
 4. Note the **protocol**, **address**, and **command** for each button.
 
-### 4. Add IR automations to the YAML
+### 4. Add IR buttons to the YAML
 
-Open `firmware/esphome/pc-ir-remote.yaml` and find the commented automation blocks
-inside the `remote_receiver:` section. Uncomment and fill them in:
+Open `firmware/esphome/pc-ir-remote.yaml` and find the commented IR button blocks
+in the `binary_sensor:` section. Uncomment and fill in your address and command:
 
 ```yaml
-remote_receiver:
-  ...
-  on_nec:
-    address: 0x04
-    command: 0x08
-    then:
+binary_sensor:
+  - platform: remote_receiver
+    name: "IR Power Button"
+    nec:
+      address: 0x837C
+      command: 0x7F80
+    on_press:
       - button.press: pc_power_button
 
-  on_nec:
-    address: 0x04
-    command: 0x09
-    then:
+  - platform: remote_receiver
+    name: "IR Reset Button"
+    nec:
+      address: 0x837C
+      command: 0x????
+    on_press:
       - button.press: pc_reset_button
 ```
 
 > If your remote uses a different protocol the log will show the correct name
-> (e.g. `samsung`, `rc5`, `sony`). Replace `on_nec` with that protocol name.
+> (e.g. `samsung`, `rc5`, `sony`). Replace `nec:` with that protocol name.
 
 ### 5. Disable dumping and reflash
 
