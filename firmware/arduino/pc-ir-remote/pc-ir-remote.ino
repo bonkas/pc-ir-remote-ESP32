@@ -12,6 +12,7 @@
  *   GPIO2 → relay coil trigger  (relay contacts → RST_SW header)
  *   Learn Power btn   → GPIO5  (other leg to GND, active-low)
  *   Learn Reset btn   → GPIO6  (other leg to GND, active-low)
+ *   Power LED input:  PWR_LED+ → 10kΩ → GPIO4 → 10kΩ → GND  (voltage divider)
  *
  * LEARNING IR CODES:
  *   Press Learn Power button, then press the desired button on your remote.
@@ -44,6 +45,8 @@
 #define RESET_PIN               2      // relay coil trigger → RST_SW header
 #define LEARN_POWER_BTN_PIN     5      // active-low, internal pull-up
 #define LEARN_RESET_BTN_PIN     6      // active-low, internal pull-up
+#define POWER_LED_IN_PIN        4      // PC front-panel power LED: PWR_LED+ → 10kΩ → GPIO4 → 10kΩ → GND
+#define PC_STATE_THRESHOLD_MS   5000   // LED solid for this long → definitive ON or OFF (else SLEEPING)
 
 // STATUS_LED_PIN options:
 //   LED_BUILTIN  → onboard LED (GPIO8 on ESP32-C3 Super Mini)
@@ -99,6 +102,42 @@ struct Button {
     return false;
   }
 };
+
+// =============================================================================
+// PC STATE
+// Reads the front-panel power LED header on GPIO4 (via voltage divider) and
+// derives one of three states by tracking how long the LED has been
+// continuously HIGH or LOW:
+//
+//   Solid HIGH for PC_STATE_THRESHOLD_MS → ON
+//   Solid LOW  for PC_STATE_THRESHOLD_MS → OFF
+//   Toggling (neither threshold met)     → SLEEPING
+//
+// State changes are reported to Serial. Does not affect relay or IR logic.
+// =============================================================================
+
+enum PcState { PC_UNKNOWN, PC_OFF, PC_ON, PC_SLEEPING };
+PcState pcState = PC_UNKNOWN;
+
+unsigned long ledLastHigh = 0;  // last millis() the LED was seen HIGH
+unsigned long ledLastLow  = 0;  // last millis() the LED was seen LOW
+
+void checkPcState() {
+  unsigned long now = millis();
+  if (digitalRead(POWER_LED_IN_PIN) == HIGH) ledLastHigh = now;
+  else                                        ledLastLow  = now;
+
+  PcState newState;
+  if      ((now - ledLastLow)  >= PC_STATE_THRESHOLD_MS) newState = PC_ON;
+  else if ((now - ledLastHigh) >= PC_STATE_THRESHOLD_MS) newState = PC_OFF;
+  else                                                    newState = PC_SLEEPING;
+
+  if (newState != pcState) {
+    pcState = newState;
+    const char* labels[] = { "UNKNOWN", "OFF", "ON", "SLEEPING" };
+    Serial.printf("PC state: %s\n", labels[pcState]);
+  }
+}
 
 // =============================================================================
 // STATE
@@ -286,6 +325,11 @@ void setup() {
   learnPowerBtn.begin(LEARN_POWER_BTN_PIN);
   learnResetBtn.begin(LEARN_RESET_BTN_PIN);
 
+  // PC state input — initialise both timestamps so state resolves after threshold elapses
+  pinMode(POWER_LED_IN_PIN, INPUT);
+  ledLastHigh = millis();
+  ledLastLow  = millis();
+
   // Serial + startup
   Serial.begin(115200);
   Serial.println("PC IR Remote starting...");
@@ -299,11 +343,12 @@ void setup() {
 
 // =============================================================================
 // MAIN LOOP
-// Each iteration runs four tasks in order:
+// Each iteration runs five tasks in order:
 //   1. Check learn buttons  — enters learn mode if a button is pressed
 //   2. Update learn LED     — drives the repeating blink pattern (non-blocking)
 //   3. Check learn timeout  — cancels learn mode after LEARN_TIMEOUT_MS
 //   4. Handle IR input      — saves code (learn mode) or fires relay (normal)
+//   5. Check PC state       — reports ON / SLEEPING / OFF to Serial
 // =============================================================================
 
 void loop() {
@@ -323,4 +368,7 @@ void loop() {
 
   // 4. IR receive
   handleIR();
+
+  // 5. PC state
+  checkPcState();
 }

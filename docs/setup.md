@@ -104,6 +104,15 @@ esphome run firmware/esphome/pc-ir-remote.yaml
 
 If not auto-discovered: **Settings → Devices & Services → Add Integration → ESPHome**.
 
+By default the HA device exposes only the **PC Power Button**. Optional entities are
+hidden with `internal: true` or commented out until the required wiring is in place:
+
+| Entity | Default | How to enable |
+|--------|---------|---------------|
+| PC Power Button | **Visible** | Always on |
+| PC Reset Button | Hidden | Set `internal: false` in the button block |
+| PC State (On/Sleeping/Off) | Commented out | Wire the voltage divider to GPIO4 first, then uncomment both the `binary_sensor` and `text_sensor` blocks |
+
 ---
 
 ## Option 2 — Standalone Arduino Sketch (No Home Assistant)

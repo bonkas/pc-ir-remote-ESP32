@@ -34,6 +34,7 @@ IR Remote → TSOP38238 → ESP32-C3 → Relay → PWR_SW / RST_SW header on mot
 - IR codes stored in flash and survive power cycles
 - Physical buttons on the board for direct manual triggering (no remote needed)
 - Status LED feedback for all actions
+- Optional: reads the front-panel power LED to report PC state (On / Sleeping / Off) in Home Assistant
 
 ---
 
@@ -105,6 +106,7 @@ See `docs/assembly.md` for the full wiring guide including the TSOP38238 and but
 | Function | GPIO | Notes |
 |----------|------|-------|
 | IR Receiver OUT | GPIO3 | Input |
+| PC Power LED input | GPIO4 | Input — PWR_LED+ → 10kΩ → GPIO4 → 10kΩ → GND (optional, see assembly.md) |
 | Power relay | GPIO1 | Output — relay contacts → PWR_SW header |
 | Reset relay | GPIO2 | Output — relay contacts → RST_SW header |
 | Learn Power / Power trigger | GPIO5 | Input, active-low, internal pull-up |
@@ -164,7 +166,7 @@ IR codes are identified from logs, then written into the YAML — a one-time pro
 6. Comment out `dump: all` in the `remote_receiver` block, then reflash.
 
 > If your remote uses a different protocol (Samsung, RC5, Sony, etc.) the log will
-> show the correct protocol name — replace `on_nec` with `on_samsung`, `on_rc5`, etc.
+> show the correct protocol name — replace `nec:` with `samsung:`, `rc5:`, etc.
 
 For the full ESPHome setup walkthrough see `docs/setup.md`.
 
