@@ -16,6 +16,12 @@
 esphome:
   name: pc-ir-remote
   friendly_name: PC IR Remote
+  on_boot:
+    priority: -100   # run after all components initialised
+    then:
+      - lambda: |-
+          id(led_last_high) = millis();
+          id(led_last_low)  = millis();
 
 esp32:
   board: lolin_c3_mini
@@ -48,6 +54,23 @@ logger:
   level: DEBUG
 
 # =============================================================================
+# GLOBALS
+# Timestamps updated by the power LED binary sensor (see PC STATE section).
+# Used by the pc_state text sensor to derive On / Sleeping / Off.
+# Initialised at boot via on_boot above so state resolves after 5 s of monitoring.
+# =============================================================================
+
+globals:
+  - id: led_last_high
+    type: unsigned long
+    restore_value: false
+    initial_value: '0'
+  - id: led_last_low
+    type: unsigned long
+    restore_value: false
+    initial_value: '0'
+
+# =============================================================================
 # IR RECEIVER — TSOP38238
 # Wiring: OUT → GPIO3 (inverted: true, TSOP output is active-low)
 #         VS  → 3.3V via 100Ω series resistor
@@ -77,8 +100,7 @@ switch:
       number: GPIO1
       inverted: true       # relay fires on LOW
     id: power_relay
-    name: "PC Power Relay"
-    icon: "mdi:electric-switch"
+    internal: true         # controlled via pc_power_button — not exposed directly to HA
     restore_mode: ALWAYS_OFF
 
   - platform: gpio
@@ -86,8 +108,7 @@ switch:
       number: GPIO2
       inverted: true       # relay fires on LOW
     id: reset_relay
-    name: "PC Reset Relay"
-    icon: "mdi:electric-switch"
+    internal: true         # controlled via pc_reset_button — not exposed directly to HA
     restore_mode: ALWAYS_OFF
 
 # =============================================================================
@@ -109,9 +130,11 @@ button:
       - switch.turn_off: power_relay
       - light.turn_off: status_led
 
+  # Reset button — set internal: false (or remove the line) to expose in HA
   - platform: template
     name: "PC Reset Button"
     id: pc_reset_button
+    internal: true
     icon: "mdi:restart"
     on_press:
       - light.turn_on: status_led
@@ -122,7 +145,14 @@ button:
 
 # =============================================================================
 # BINARY SENSORS
-# Includes both physical buttons and IR remote buttons.
+# Includes PC power LED (raw), physical buttons, and IR remote buttons.
+#
+# PC STATE — GPIO4 reads the front-panel power LED via a voltage divider.
+# The raw binary sensor feeds two globals (led_last_high / led_last_low) which
+# the pc_state text sensor uses to derive On / Sleeping / Off. See PC STATE
+# text_sensor section at the bottom of this file.
+# Requires hardware — uncomment BOTH the binary_sensor block here AND the
+# text_sensor block below once the voltage divider is wired up.
 #
 # IR BUTTONS — add one entry per remote button using the protocol and codes
 # from the 'dump: all' logs. Replace 'nec' with your protocol if different
@@ -134,6 +164,22 @@ button:
 # =============================================================================
 
 binary_sensor:
+  # --- PC power LED (raw) ---
+  # Requires hardware: see assembly.md for voltage divider wiring (GPIO4).
+  # internal: true — this feeds the pc_state text sensor, not exposed to HA.
+  # Also uncomment the text_sensor block at the bottom of this file.
+  #
+  # - platform: gpio
+  #   pin:
+  #     number: GPIO4
+  #     mode: INPUT
+  #   id: power_led_raw
+  #   internal: true
+  #   on_press:
+  #     - lambda: id(led_last_high) = millis();
+  #   on_release:
+  #     - lambda: id(led_last_low) = millis();
+
   # --- IR remote buttons (add one block per button) ---
   # internal: true hides the entity from HA — it still triggers the relay.
   # - platform: remote_receiver
@@ -196,4 +242,24 @@ light:
   - platform: binary
     name: "Status LED"
     id: status_led
+    internal: true         # controlled by button automations — not exposed to HA
     output: status_led_output
+
+# =============================================================================
+# PC STATE
+# Template text sensor that derives PC state from the power LED timestamps.
+# Checks every second — reports "On", "Sleeping", or "Off" to Home Assistant.
+# Requires the power_led_raw binary_sensor above to be uncommented first.
+# =============================================================================
+
+# text_sensor:
+#   - platform: template
+#     name: "PC State"
+#     id: pc_state
+#     icon: "mdi:desktop-tower"
+#     update_interval: 1s
+#     lambda: |-
+#       unsigned long now = millis();
+#       if ((now - id(led_last_low))  >= 5000) return {"On"};
+#       if ((now - id(led_last_high)) >= 5000) return {"Off"};
+#       return {"Sleeping"};

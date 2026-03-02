@@ -10,6 +10,7 @@
 | Function | GPIO | Notes |
 |----------|------|-------|
 | IR Receiver OUT | GPIO3 | Input |
+| PC Power LED input | GPIO4 | Input — optional, reads front-panel power LED header (see wiring below) |
 | PC Power Button relay | GPIO1 | Output — relay coil trigger (relay contacts → PWR_SW header) |
 | PC Reset Button relay | GPIO2 | Output — relay coil trigger (relay contacts → RST_SW header) |
 | Learn Power Button | GPIO5 | Input, pull-up, active-low (button to GND) |
@@ -62,6 +63,27 @@ ESP32 GPIO → PC817 LED (anode+cathode) → PC817 phototransistor → S8550 bas
 **Note:** PC817 chosen over LTV-354T — PC817 is a DC optocoupler (single LED input),
 better suited to GPIO-driven applications. LTV-354T is AC/DC (dual anti-parallel LEDs)
 and not needed here.
+
+### PC Power LED Input (GPIO4) — Optional
+
+The PCB intercepts the front-panel power LED header. Connect the motherboard's
+PWR_LED+/PWR_LED- to the input header on the PCB, and reconnect your front-panel
+LED to the passthrough output header — the LED continues to work as normal.
+
+The PCB circuit reads the LED signal on GPIO4 so the ESP32 can detect PC state:
+
+| LED behaviour | PC state |
+|---------------|----------|
+| Solid on for 5+ seconds | On |
+| Blinking / intermittent | Sleeping |
+| Solid off for 5+ seconds | Off |
+
+In ESPHome this appears as a "PC State" text sensor in Home Assistant showing
+On, Sleeping, or Off. In the Arduino sketch, state changes print to Serial.
+
+**Enabling in firmware:**
+- ESPHome: uncomment the `PC Power State` `binary_sensor` block in the YAML, then reflash.
+- Arduino: enabled by default — state changes print to Serial. No reflash needed.
 
 ### PC Motherboard PWR_SW Header
 

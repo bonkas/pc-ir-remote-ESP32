@@ -59,6 +59,7 @@ this to USB HID control and Home Assistant integration.
 - ESP32 + TSOP38238 IR receiver + relay → PC motherboard power button header
 - Power from internal USB header (5V/GND only)
 - ESPHome config: receive IR codes, trigger relay to pulse power button
+- PC power state: read front-panel power LED header (GPIO4 via voltage divider) → binary_sensor in HA
 - Get working on breadboard FIRST, then design PCB
 - Use existing relay board to validate logic before committing to PCB
 
@@ -79,7 +80,7 @@ this to USB HID control and Home Assistant integration.
 
 | Component | Part | Notes |
 |-----------|------|-------|
-| MCU | ESP32-C3 Super Mini | PlatformIO board: `lolin_c3_mini`. GPIO1=relay coil trigger (→PWR_SW), GPIO2=relay coil trigger (→RST_SW), GPIO3=IR, GPIO5=learn power btn, GPIO6=learn reset btn, GPIO7=external status LED (330Ω→LED→GND). GPIO8=onboard LED_BUILTIN (alternative, set STATUS_LED_PIN in firmware). LED feedback: 3 repeating flashes=learn power active, 2 repeating flashes=learn reset active, 3 quick blinks=saved, 2 slow blinks=timed out. |
+| MCU | ESP32-C3 Super Mini | PlatformIO board: `lolin_c3_mini`. GPIO1=relay coil trigger (→PWR_SW), GPIO2=relay coil trigger (→RST_SW), GPIO3=IR, GPIO4=PC power LED input (PWR_LED+ → 10kΩ → GPIO4 → 10kΩ → GND), GPIO5=learn power btn, GPIO6=learn reset btn, GPIO7=external status LED (330Ω→LED→GND). GPIO8=onboard LED_BUILTIN (alternative, set STATUS_LED_PIN in firmware). LED feedback: 3 repeating flashes=learn power active, 2 repeating flashes=learn reset active, 3 quick blinks=saved, 2 slow blinks=timed out. |
 | IR Receiver | TSOP38238 | 38kHz carrier, 3-pin (OUT, GND, VS) |
 | Optocoupler | PC817 | One per relay — DC optocoupler, single LED input, isolates ESP32 GPIO from relay coil circuit |
 | Relay driver | S8550 PNP (SOT-23) | One per relay — driven by PC817 output |
@@ -113,7 +114,33 @@ this to USB HID control and Home Assistant integration.
    PC is off (as long as the PSU is connected to mains). This is how the device can
    receive IR "power on" commands when the PC is off.
 
-5. **USB header pinout (USB 2.0 internal, 9-pin 2x5)**:
+5. **PC power LED input (GPIO4)**: The PCB intercepts the front-panel power LED header.
+   PWR_LED+ and PWR_LED- come in from the motherboard; the LED passthrough goes back out
+   to an external header so the front-panel LED still works normally. The voltage divider
+   is in parallel — it does not affect LED brightness.
+   ```
+   PWR_LED+  ──┬─────────────────────────  External LED+ (passthrough to front-panel LED)
+               │
+              R1 (10kΩ)
+               │
+              GPIO4
+               │
+              R2 (10kΩ)
+               │
+              GND
+
+   PWR_LED-  ───────────────────────────  GND / External LED-
+   ```
+   GPIO4 sits at the R1/R2 midpoint: 5V → 2.5V, 3.3V → 1.65V — safe for ESP32-C3 GPIO.
+
+   **GND reference:** PWR_LED- must share the same GND as the ESP32, otherwise the
+   voltage divider has no valid reference and GPIO4 reads nonsense. PWR_LED- should
+   land on the PCB's common GND rail. This is automatically satisfied when powered
+   from the internal USB header (its GND is the motherboard system GND). When powered
+   from external USB-C, the PWR_LED- → PCB GND connection provides the tie.
+   The relay contacts do NOT require a shared GND — they are isolated by the relay.
+
+6. **USB header pinout (USB 2.0 internal, 9-pin 2x5)**:
    - Pin 1: +5V (red)
    - Pin 2: D- (white)
    - Pin 3: D+ (green)
@@ -152,6 +179,9 @@ The ESPHome YAML (`firmware/esphome/pc-ir-remote.yaml`) is structured as follows
 - **Relay switches**: GPIO1 (power) and GPIO2 (reset), active-low, `restore_mode: ALWAYS_OFF`
 - **Template buttons**: `pc_power_button` and `pc_reset_button` — 500ms relay pulse + LED flash
 - **Physical buttons**: GPIO5 (power) and GPIO6 (reset), `internal: true`
+- **PC State**: `text_sensor` (commented out, requires hardware) — derives On / Sleeping / Off from
+  the power LED signal using two `globals` (`led_last_high`, `led_last_low`) updated by an internal
+  `binary_sensor` on GPIO4. Both blocks must be uncommented together.
 - **Status LED**: GPIO7 external (330Ω series) or GPIO8 onboard — controlled via `output` + `binary light`
 
 ---
@@ -201,6 +231,8 @@ pc-ir-remote/
 
 ## Open Questions / TODO
 
+- [ ] Wire GPIO4 to front-panel power LED header via voltage divider (10kΩ + 10kΩ) on breadboard and validate binary_sensor in HA
+- [ ] Add voltage divider footprint for GPIO4 power LED input to KiCad schematic/PCB
 - [ ] Finalise PCB layout in KiCad and export gerbers
 - [ ] Choose PCB manufacturer and check design rules (JLCPCB / PCBWay / OSHPark)
 - [ ] Phase 2: Replace relay with MOSFET (minor PCB rev, minimal code change)
