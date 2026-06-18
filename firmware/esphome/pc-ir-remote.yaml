@@ -126,7 +126,7 @@ button:
     on_press:
       - light.turn_on: status_led
       - switch.turn_on: power_relay
-      - delay: 500ms
+      - delay: 2500ms
       - switch.turn_off: power_relay
       - light.turn_off: status_led
 
@@ -139,7 +139,7 @@ button:
     on_press:
       - light.turn_on: status_led
       - switch.turn_on: reset_relay
-      - delay: 500ms
+      - delay: 250ms
       - switch.turn_off: reset_relay
       - light.turn_off: status_led
 

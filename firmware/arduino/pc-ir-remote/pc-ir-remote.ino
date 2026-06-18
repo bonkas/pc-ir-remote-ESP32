@@ -70,6 +70,13 @@
 #define LED_OFF                 (STATUS_LED_ACTIVE_ON_HIGH ? LOW : HIGH)
 
 // =============================================================================
+// STATE TYPES — defined early so Arduino auto-generated prototypes can see them
+// =============================================================================
+
+enum LearnState { IDLE, LEARN_POWER, LEARN_RESET };
+enum PcState { PC_UNKNOWN, PC_OFF, PC_ON, PC_SLEEPING };
+
+// =============================================================================
 // BUTTON HELPER
 // Debounced edge-detection. Call justPressed() each loop — returns true once
 // per physical press (falling edge only).
@@ -116,7 +123,6 @@ struct Button {
 // State changes are reported to Serial. Does not affect relay or IR logic.
 // =============================================================================
 
-enum PcState { PC_UNKNOWN, PC_OFF, PC_ON, PC_SLEEPING };
 PcState pcState = PC_UNKNOWN;
 
 unsigned long ledLastHigh = 0;  // last millis() the LED was seen HIGH
@@ -143,7 +149,6 @@ void checkPcState() {
 // STATE
 // =============================================================================
 
-enum LearnState { IDLE, LEARN_POWER, LEARN_RESET };
 LearnState learnState = IDLE;
 unsigned long learnStartTime = 0;
 
