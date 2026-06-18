@@ -126,15 +126,13 @@ button:
     on_press:
       - light.turn_on: status_led
       - switch.turn_on: power_relay
-      - delay: 2500ms
+      - delay: 250ms
       - switch.turn_off: power_relay
       - light.turn_off: status_led
 
-  # Reset button — set internal: false (or remove the line) to expose in HA
   - platform: template
     name: "PC Reset Button"
     id: pc_reset_button
-    internal: true
     icon: "mdi:restart"
     on_press:
       - light.turn_on: status_led
