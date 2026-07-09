@@ -69,6 +69,10 @@ globals:
     type: unsigned long
     restore_value: false
     initial_value: '0'
+  - id: pc_state_last
+    type: std::string
+    restore_value: false
+    initial_value: '""'
 
 # =============================================================================
 # IR RECEIVER — TSOP38238
@@ -163,20 +167,16 @@ button:
 
 binary_sensor:
   # --- PC power LED (raw) ---
-  # Requires hardware: see assembly.md for voltage divider wiring (GPIO4).
-  # internal: true — this feeds the pc_state text sensor, not exposed to HA.
-  # Also uncomment the text_sensor block at the bottom of this file.
-  #
-  # - platform: gpio
-  #   pin:
-  #     number: GPIO4
-  #     mode: INPUT
-  #   id: power_led_raw
-  #   internal: true
-  #   on_press:
-  #     - lambda: id(led_last_high) = millis();
-  #   on_release:
-  #     - lambda: id(led_last_low) = millis();
+  - platform: gpio
+    pin:
+      number: GPIO4
+      mode: INPUT_PULLDOWN
+    id: power_led_raw
+    internal: true
+    on_press:
+      - lambda: id(led_last_high) = millis();
+    on_release:
+      - lambda: id(led_last_low) = millis();
 
   # --- IR remote buttons (add one block per button) ---
   # internal: true hides the entity from HA — it still triggers the relay.
@@ -244,20 +244,41 @@ light:
     output: status_led_output
 
 # =============================================================================
+# PC STATE POLLER
+# Updates the correct timestamp every 500ms based on current GPIO4 state.
+# This ensures timestamps stay fresh even without transitions (e.g. LED solid
+# LOW at boot with no on_release firing).
+# =============================================================================
+
+interval:
+  - interval: 500ms
+    then:
+      - lambda: |-
+          if (id(power_led_raw).state) {
+            id(led_last_high) = millis();
+          } else {
+            id(led_last_low) = millis();
+          }
+
+# =============================================================================
 # PC STATE
 # Template text sensor that derives PC state from the power LED timestamps.
 # Checks every second — reports "On", "Sleeping", or "Off" to Home Assistant.
 # Requires the power_led_raw binary_sensor above to be uncommented first.
 # =============================================================================
 
-# text_sensor:
-#   - platform: template
-#     name: "PC State"
-#     id: pc_state
-#     icon: "mdi:desktop-tower"
-#     update_interval: 1s
-#     lambda: |-
-#       unsigned long now = millis();
-#       if ((now - id(led_last_low))  >= 5000) return {"On"};
-#       if ((now - id(led_last_high)) >= 5000) return {"Off"};
-#       return {"Sleeping"};
+text_sensor:
+  - platform: template
+    name: "PC State"
+    id: pc_state
+    icon: "mdi:desktop-tower"
+    update_interval: 1s
+    lambda: |-
+      unsigned long now = millis();
+      std::string state;
+      if ((now - id(led_last_low))  >= 5000) state = "On";
+      else if ((now - id(led_last_high)) >= 5000) state = "Off";
+      else state = "Sleeping";
+      if (state == id(pc_state_last)) return {};
+      id(pc_state_last) = state;
+      return {state};
