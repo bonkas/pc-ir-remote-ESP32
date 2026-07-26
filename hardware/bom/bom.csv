@@ -1,12 +1,23 @@
-Reference,Value,Footprint,Quantity,Notes
-U1,ESP32 Dev Board 38-pin,ESP32-DevKitC-38pin,1,Main MCU
-U2,TSOP38238,TSOP38238,1,IR receiver 38kHz — add 100nF cap + 100Ω series resistor on power
-K1,Relay 5V,SRD-05VDC-SL-C or similar,1,Phase 1 only — replace with MOSFET in phase 2
-Q1,AO3400 or BS170,SOT-23 or TO-92,1,Phase 2 MOSFET — DNP in phase 1
-R1,100Ω,0402 or 0603,1,Series resistor on TSOP38238 power line
-R2,100Ω,0402 or 0603,1,MOSFET gate resistor (phase 2)
-C1,100nF ceramic,0402 or 0603,1,Decoupling cap close to TSOP38238 VS pin
-J1,USB-A or USB-C,USB-A-TH or USB-C-TH,1,External power option — populate as needed
-J2,2x5 2.54mm header,IDC-2x5-2.54mm,1,Internal USB 2.0 motherboard header power tap
-J3,2x3.5mm screw terminal,ScrewTerminal-3.5mm-2pin,1,Generic 5V input option
-J4,2-pin 2.54mm header,PinHeader-1x2-2.54mm,1,PWR_SW connection to motherboard
+"Reference","Qty","Value","Footprint","Datasheet"
+"C1","1","100nF","C_0805_2012Metric",""
+"D1,D3","2","1N4148WS","D_SOD-323_HandSoldering","https://www.lcsc.com/datasheet/C917117.pdf?spm=wm.sxq.inf.ggs___wm.fly.bg.2.xh&lcsc_vid=FAReVlJfEQcLVlBeFVIMBVVeQgdXV1ADFQAMAl0FEQMxVlNeR1JWU1RTR1NdUjsOAxUeFF5JWBYZEEoKFBINSQcJGk4eFQsCAgIaSgADAwAHC0slRllfVlFfWQkaCgg%3D"
+"D2,D4","2","LED","LED_0805_2012Metric","https://www.lcsc.com/datasheet/lcsc_datasheet_2409272203_Foshan-NationStar-Optoelectronics-NCD0805R1_C84256.pdf"
+"J1","1","5V_Power_IN","PinHeader_1x02_P2.54mm_Vertical",""
+"J2,J7","2","Conn_01x03_Pin","PinHeader_1x03_P2.54mm_Vertical",""
+"J4","1","PW_BTN","PinHeader_1x02_P2.54mm_Vertical",""
+"J5","1","RES_BTN","PinHeader_1x02_P2.54mm_Vertical",""
+"J8","1","MB_PowerLED_IN","PinHeader_1x02_P2.54mm_Vertical",""
+"J9","1","PowerLED_OUT","PinHeader_1x02_P2.54mm_Vertical",""
+"J10","1","IR_External","PinHeader_1x03_P2.54mm_Vertical",""
+"K1,K2","2","G5V-1","Relay_SPDT_Omron_G5V-1","http://omronfs.omron.com/en_US/ecb/products/pdf/en-g5v_1.pdf"
+"Q1,Q2","2","S8550","SOT-23","http://www.unisonic.com.tw/datasheet/S8550.pdf"
+"Q3","1","SS8550","SOT-23","http://www.secosgmbh.com/datasheet/products/SSMPTransistor/SOT-23/SS8550.pdf"
+"R1","1","100R","R_0805_2012Metric_Pad1.20x1.40mm_HandSolder",""
+"R2,R7,R10,R11","4","10k","R_0805_2012Metric_Pad1.20x1.40mm_HandSolder",""
+"R3,R4,R8,R9","4","1k","R_0805_2012Metric_Pad1.20x1.40mm_HandSolder",""
+"R5,R13","2","680R","R_0805_2012Metric_Pad1.20x1.40mm_HandSolder",""
+"SW1","1","PWR_Learn","SW_PUSH_6mm_H5mm",""
+"SW2","1","RES_Learn","SW_PUSH_6mm_H5mm",""
+"U1","1","ESP32-C3_SUPERMINI_TH","MODULE_ESP32-C3_SUPERMINI_TH",""
+"U2","1","TSOP38238","Vishay_MINICAST-3Pin","http://www.vishay.com/docs/82491/tsop382.pdf"
+"U3,U4","2","PC817","DIP-4_W7.62mm","http://www.soselectronic.cz/a_info/resource/d/pc817.pdf"
