@@ -49,10 +49,12 @@
 #define PC_STATE_THRESHOLD_MS   5000   // LED solid for this long → definitive ON or OFF (else SLEEPING)
 
 // STATUS_LED_PIN options:
-//   LED_BUILTIN  → onboard LED (GPIO8 on ESP32-C3 Super Mini)
-//   7            → external LED on GPIO7 (wire: GPIO7 → 330Ω → LED → GND)
-//   -1           → no LED (disable all LED feedback)
-#define STATUS_LED_PIN          LED_BUILTIN
+//   8   → onboard LED on ESP32-C3 SuperMini boards. NOTE: the Arduino
+//         LED_BUILTIN macro resolves to GPIO7 for PlatformIO's "lolin_c3_mini"
+//         board (genuine Wemos/Lolin pinout), which does NOT match the
+//         SuperMini clone boards this project targets — use the literal 8.
+//   -1  → no LED (disable all LED feedback)
+#define STATUS_LED_PIN          8
 
 #define PULSE_MS                500    // relay pulse duration (ms)
 #define LEARN_TIMEOUT_MS        10000  // cancel learn mode after 10s with no IR
