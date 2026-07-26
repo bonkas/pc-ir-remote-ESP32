@@ -15,7 +15,7 @@
 | PC Reset Button relay | GPIO2 | Output — relay coil trigger (relay contacts → RST_SW header) |
 | Learn Power Button | GPIO5 | Input, pull-up, active-low (button to GND) |
 | Learn Reset Button | GPIO6 | Input, pull-up, active-low (button to GND) |
-| Status LED | GPIO7 | Output — external LED (GPIO7 → 330Ω → LED → GND). Change `STATUS_LED_PIN` in firmware to `LED_BUILTIN` to use onboard LED (GPIO8) instead, or `-1` to disable. |
+| Status LED | GPIO8 | Output — the Arduino sketch defaults `STATUS_LED_PIN` to `8`, the onboard LED on ESP32-C3 SuperMini boards. Set it to `7` for an external LED instead (GPIO7 → 330Ω → LED → GND), or `-1` to disable. **Do not use the `LED_BUILTIN` macro** — PlatformIO's `lolin_c3_mini` board profile maps it to GPIO7, not the SuperMini's actual GPIO8 onboard LED. |
 
 ### TSOP38238 IR Receiver
 

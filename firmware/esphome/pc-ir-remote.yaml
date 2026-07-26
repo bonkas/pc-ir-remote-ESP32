@@ -1,5 +1,4 @@
 # ESPHome config for PC IR Remote — ESP32-C3 Super Mini
-# See CONTEXT.md for full project background and wiring notes.
 #
 # SETUP STEPS:
 # 1. Flash this config to your ESP32-C3
@@ -226,8 +225,8 @@ binary_sensor:
 
 # =============================================================================
 # STATUS LED
-# GPIO7 → 330Ω → LED → GND  (external LED)
-# Change GPIO7 to GPIO8 to use the onboard LED_BUILTIN instead.
+# GPIO7 → 330Ω → LED → GND  (external LED, default here)
+# Change GPIO7 to GPIO8 below to use the SuperMini's onboard LED instead.
 # The light entity is controlled from button automations above.
 # =============================================================================
 

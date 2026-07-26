@@ -4,6 +4,27 @@ See `assembly.md` for wiring before flashing.
 
 ---
 
+## Optional: Hardware Bring-Up Test (Recommended)
+
+Before setting up either firmware option, flash `firmware/arduino/pc-ir-relay-test/` to
+sanity-check the assembled board. It has no IR/WiFi dependencies, so it's a fast way to
+catch a wiring mistake before spending time on IR learning.
+
+- Automatically pulses the POWER and RESET relays, alternating every second — confirms
+  both relay circuits click and fire correctly without needing an IR remote.
+- The Learn Power / Learn Reset buttons (GPIO5 / GPIO6) manually pulse the matching relay
+  on demand.
+- The onboard LED (GPIO8) lights for the exact duration of every relay pulse — a quick
+  visual check if you don't have a multimeter handy.
+
+Flash it the same way as the standalone Arduino sketch below: open the
+`firmware/arduino/pc-ir-relay-test/` folder in VS Code + PlatformIO and click **Upload**.
+
+Once both relays click and the LED blinks in sync, move on to one of the firmware
+options below.
+
+---
+
 ## Option 1 — ESPHome (Home Assistant Integration)
 
 ### Prerequisites

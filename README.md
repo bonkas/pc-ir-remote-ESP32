@@ -43,15 +43,14 @@ IR Remote → TSOP38238 → ESP32-C3 → Relay → PWR_SW / RST_SW header on mot
 | File | What it covers | Read when |
 |------|---------------|-----------|
 | `docs/assembly.md` | Full wiring guide — TSOP38238, relays, buttons, LED, power supply, breadboard prototype | Building or wiring the hardware |
-| `docs/setup.md` | Step-by-step flashing and IR code setup for both firmware options | Setting up the firmware |
-| `CONTEXT.md` | Full project background, design decisions, phase plan, component choices | Understanding why things are done the way they are |
+| `docs/setup.md` | Step-by-step flashing and IR code setup for both firmware options, plus an optional relay/LED hardware bring-up test | Setting up the firmware |
 
 ---
 
 ## Project Status
 
-Breadboard prototype validated. PCB schematic complete, layout in progress.
-Gerbers and BOM will be added once the PCB layout is finalised.
+PCB designed, fabricated, and validated on real hardware — IR receive, both relays,
+and status LED all confirmed working. Gerbers and BOM are in `hardware/`.
 
 ---
 
@@ -61,18 +60,23 @@ Gerbers and BOM will be added once the PCB layout is finalised.
 
 | Component | Part | Qty |
 |-----------|------|-----|
-| MCU | ESP32-C3 Super Mini | 1 |
+| MCU | ESP32-C3 SuperMini (THT) | 1 |
 | IR Receiver | TSOP38238 (38kHz) | 1 |
 | Optocoupler | PC817 (DIP-4) | 2 |
 | Relay driver transistor | S8550 PNP (SOT-23) | 2 |
-| Relay | JY3FF-S-DC5V-C SPDT | 2 |
-| Flyback diode | 1N914 (SOD-323F) | 2 |
+| Driver transistor | SS8550 (SOT-23) | 1 |
+| Relay | Omron G5V-1 SPDT | 2 |
+| Flyback diode | 1N4148WS (SOD-323) | 2 |
+| Relay indicator LED | LED (0805) | 2 |
 | Decoupling capacitor | 100nF ceramic (0805) | 1 |
 | TSOP series resistor | 100Ω (0805) | 1 |
-| Status LED | LED (0805) | 1 |
-| LED resistor | 330Ω (0805) | 1 |
+| Pull-up/pull-down resistor | 10kΩ (0805) | 4 |
+| Base/gate resistor | 1kΩ (0805) | 4 |
+| LED series resistor | 680Ω (0805) | 2 |
+| Learn button | 6mm tactile pushbutton | 2 |
 
-See `hardware/bom/` for the full BOM with values and supplier links.
+See `hardware/bom/bom.csv` for the full BOM with exact reference designators, footprints,
+and supplier datasheet links.
 
 ### PCB
 
@@ -111,7 +115,7 @@ See `docs/assembly.md` for the full wiring guide including the TSOP38238 and but
 | Reset relay | GPIO2 | Output — relay contacts → RST_SW header |
 | Learn Power / Power trigger | GPIO5 | Input, active-low, internal pull-up |
 | Learn Reset / Reset trigger | GPIO6 | Input, active-low, internal pull-up |
-| Status LED | GPIO7 | Output — external LED via 330Ω, or change to GPIO8 for onboard LED |
+| Status LED | GPIO8 or GPIO7 | Output — GPIO8 is the SuperMini's onboard LED (Arduino sketch default). GPIO7 → 330Ω → LED → GND for an external LED instead (ESPHome default) |
 
 ---
 
@@ -224,18 +228,24 @@ For the full Arduino setup walkthrough see `docs/setup.md`.
 ```
 firmware/
   esphome/            — ESPHome YAML config + secrets template
-  arduino/            — Standalone PlatformIO sketch
+  arduino/
+    pc-ir-remote/      — Standalone PlatformIO sketch
+    pc-ir-relay-test/  — Relay/LED hardware bring-up test sketch
 hardware/
-  gerbers/            — PCB fabrication files
+  gerbers/            — PCB fabrication files (individual, source of truth)
+  gerbers.zip         — Same gerbers, zipped for manufacturer upload
   bom/                — Bill of materials
+  LICENSE             — Hardware license (CERN-OHL-P v2)
 docs/
   assembly.md         — Full wiring guide
   setup.md            — Flashing and IR code setup for both firmware options
-CONTEXT.md            — Project background, design decisions, phase plan
+LICENSE               — Firmware/software license (MIT)
 ```
 
 ---
 
 ## License
 
-TBD — likely MIT for firmware, CERN-OHL-P for hardware.
+Dual-licensed:
+- Firmware (`firmware/`) — [MIT](LICENSE)
+- Hardware (`hardware/`) — [CERN-OHL-P v2](hardware/LICENSE)

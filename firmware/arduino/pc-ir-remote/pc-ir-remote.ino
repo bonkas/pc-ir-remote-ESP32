@@ -2,8 +2,6 @@
  * PC IR Remote — Standalone Arduino/ESP32-C3 sketch
  * No Home Assistant required. Uses IRremoteESP8266 library.
  *
- * See CONTEXT.md for full project background and wiring notes.
- *
  * WIRING:
  *   TSOP38238 OUT     → GPIO3
  *   TSOP38238 VS      → 3.3V via 100Ω resistor + 100nF cap to GND
