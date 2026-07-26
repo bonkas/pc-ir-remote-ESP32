@@ -3,7 +3,7 @@ firmware/esphome/secrets.yaml
 .esphome/
 
 # KiCad source files — not published, only gerbers and BOM are committed
-hardware/kicad/
+hardware/*/kicad/
 
 # Private project notes — not published
 CONTEXT.md

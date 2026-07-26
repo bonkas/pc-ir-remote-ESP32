@@ -56,6 +56,10 @@ and status LED all confirmed working. Gerbers and BOM are in `hardware/`.
 
 ## What You Need to Build One
 
+This covers the current hardware revision, `hardware/relay-v1/` — relay-based switching.
+A MOSFET-based revision is planned; when it lands it'll live alongside this one in its
+own `hardware/` subfolder rather than replacing it.
+
 ### Components
 
 | Component | Part | Qty |
@@ -75,13 +79,14 @@ and status LED all confirmed working. Gerbers and BOM are in `hardware/`.
 | LED series resistor | 680Ω (0805) | 2 |
 | Learn button | 6mm tactile pushbutton | 2 |
 
-See `hardware/bom/bom.csv` for the full BOM with exact reference designators, footprints,
-and supplier datasheet links.
+See `hardware/relay-v1/bom/bom.csv` for the full BOM with exact reference designators,
+footprints, and supplier datasheet links.
 
 ### PCB
 
-Gerbers for fabrication are in `hardware/gerbers/`. Upload the zip to your preferred
-PCB manufacturer (JLCPCB, PCBWay, OSHPark, etc.) with default 2-layer settings.
+Gerbers for fabrication are in `hardware/relay-v1/gerbers/` (also bundled as
+`hardware/relay-v1/gerbers.zip`). Upload the zip to your preferred PCB manufacturer
+(JLCPCB, PCBWay, OSHPark, etc.) with default 2-layer settings.
 
 ### Tools and Software
 
@@ -232,10 +237,12 @@ firmware/
     pc-ir-remote/      — Standalone PlatformIO sketch
     pc-ir-relay-test/  — Relay/LED hardware bring-up test sketch
 hardware/
-  gerbers/            — PCB fabrication files (individual, source of truth)
-  gerbers.zip         — Same gerbers, zipped for manufacturer upload
-  bom/                — Bill of materials
-  LICENSE             — Hardware license (CERN-OHL-P v2)
+  relay-v1/           — Current hardware revision (relay-based switching)
+    gerbers/           — PCB fabrication files (individual, source of truth)
+    gerbers.zip        — Same gerbers, zipped for manufacturer upload
+    bom/               — Bill of materials
+    LICENSE            — Hardware license (CERN-OHL-P v2)
+  (future MOSFET-based revision will live in its own hardware/ subfolder)
 docs/
   assembly.md         — Full wiring guide
   setup.md            — Flashing and IR code setup for both firmware options
@@ -248,4 +255,4 @@ LICENSE               — Firmware/software license (MIT)
 
 Dual-licensed:
 - Firmware (`firmware/`) — [MIT](LICENSE)
-- Hardware (`hardware/`) — [CERN-OHL-P v2](hardware/LICENSE)
+- Hardware (`hardware/`) — [CERN-OHL-P v2](hardware/relay-v1/LICENSE) (each hardware revision carries its own copy)
