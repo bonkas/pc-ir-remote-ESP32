@@ -9,6 +9,8 @@
  *   - Learn Power / Learn Reset buttons (GPIO5 / GPIO6) manually pulse the
  *     matching relay on demand, independent of the auto cycle — useful for
  *     confirming a specific relay/header wiring without waiting.
+ *   - The onboard LED is lit for the exact duration of every relay pulse
+ *     (auto or manual), so you get a visual heartbeat alongside the click.
  *
  * WIRING (same as pc-ir-remote.ino, IR receiver not used here):
  *   GPIO1 → relay coil trigger  (relay contacts → PWR_SW header)
@@ -32,14 +34,15 @@
 #define TEST_RESET_BTN_PIN       6      // active-low, internal pull-up
 
 // STATUS_LED_PIN options:
-//   LED_BUILTIN  → onboard LED (GPIO8 on ESP32-C3 Super Mini)
-//   7            → external LED on GPIO7 (wire: GPIO7 → 330Ω → LED → GND)
-//   -1           → no LED (disable all LED feedback)
-#define STATUS_LED_PIN           LED_BUILTIN
+//   8   → onboard LED on ESP32-C3 SuperMini boards. NOTE: the Arduino
+//         LED_BUILTIN macro resolves to GPIO7 for PlatformIO's "lolin_c3_mini"
+//         board (genuine Wemos/Lolin pinout), which does NOT match the
+//         SuperMini clone boards this project targets — use the literal 8.
+//   -1  → no LED (disable all LED feedback)
+#define STATUS_LED_PIN           8
 
 #define PULSE_MS                 500    // relay pulse duration (ms)
 #define DEBOUNCE_MS              20     // button debounce window (ms)
-#define BLINK_MS                 80     // LED blink on/off duration (ms)
 #define AUTO_CYCLE_INTERVAL_MS   1000   // auto pulse every N ms, alternating power/reset
 
 // =============================================================================
@@ -100,13 +103,6 @@ void ledSet(bool on) {
   digitalWrite(STATUS_LED_PIN, on ? LED_ON : LED_OFF);
 }
 
-void ledBlink(int times) {
-  for (int i = 0; i < times; i++) {
-    ledSet(true);  delay(BLINK_MS);
-    ledSet(false); delay(BLINK_MS);
-  }
-}
-
 // =============================================================================
 // RELAY
 // pulseRelay blocks for PULSE_MS — intentional, simulates a real button press.
@@ -119,20 +115,15 @@ void relaySet(uint8_t pin, bool active) {
 void pulseRelay(uint8_t pin, const char* label) {
   Serial.print("Pulsing "); Serial.println(label);
   relaySet(pin, true);
+  ledSet(true);
   delay(PULSE_MS);
   relaySet(pin, false);
+  ledSet(false);
   Serial.println("Done.");
 }
 
-void pulsePowerButton() {
-  pulseRelay(POWER_PIN, "power button...");
-  ledBlink(1);
-}
-
-void pulseResetButton() {
-  pulseRelay(RESET_PIN, "reset button...");
-  ledBlink(2);
-}
+void pulsePowerButton() { pulseRelay(POWER_PIN, "power button..."); }
+void pulseResetButton() { pulseRelay(RESET_PIN, "reset button..."); }
 
 // =============================================================================
 // SETUP
